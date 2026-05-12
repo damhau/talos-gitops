@@ -1,7 +1,8 @@
 {{- if .Values.vgInit.enabled }}
 # Creates the LVM volume group consumed by topolvm-node on every cluster node.
-# Uses nsenter into PID 1 so the host's Talos lvm2 system extension binaries run
-# (avoids shipping lvm2 inside the container). Idempotent — re-running is a no-op.
+# Runs lvm2 inside the container (Talos host is shell-less so nsenter PID 1 + /bin/sh
+# is not possible). /dev is hostPath-mounted so lvm sees the host disks.
+# Idempotent — re-running is a no-op when the VG already exists.
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -18,7 +19,6 @@ spec:
       labels:
         app.kubernetes.io/name: topolvm-vg-init
     spec:
-      hostPID: true
       tolerations:
         - operator: Exists
       initContainers:
@@ -32,33 +32,33 @@ spec:
               value: {{ .Values.vgInit.volumeGroup | quote }}
             - name: VG_DEVICE
               value: {{ .Values.vgInit.device | quote }}
-          command:
-            - nsenter
-            - --target=1
-            - --mount
-            - --uts
-            - --ipc
-            - --net
-            - --pid
-            - --
-            - /bin/sh
-            - -c
+          command: ["/bin/sh", "-c"]
+          args:
             - |
               set -eu
-              host=$(hostname)
+              apk add --no-cache lvm2
               if vgs "$VG_NAME" >/dev/null 2>&1; then
-                echo "[$host] VG $VG_NAME already exists, skipping"
+                echo "VG $VG_NAME already exists, skipping"
                 exit 0
               fi
               if [ ! -b "$VG_DEVICE" ]; then
-                echo "[$host] ERROR: $VG_DEVICE is not a block device" >&2
+                echo "ERROR: $VG_DEVICE is not a block device" >&2
+                echo "Available block devices:" >&2
+                ls -la /dev/sd* /dev/vd* /dev/nvme* 2>/dev/null >&2 || true
                 exit 1
               fi
               if ! pvs "$VG_DEVICE" >/dev/null 2>&1; then
                 pvcreate "$VG_DEVICE"
               fi
               vgcreate "$VG_NAME" "$VG_DEVICE"
-              echo "[$host] Created VG $VG_NAME on $VG_DEVICE"
+              echo "Created VG $VG_NAME on $VG_DEVICE"
+          volumeMounts:
+            - name: dev
+              mountPath: /dev
+            - name: run-lvm
+              mountPath: /run/lvm
+            - name: sys
+              mountPath: /sys
       containers:
         # Keeps the DaemonSet pod alive after vg-init succeeds so the DS reports Ready.
         - name: pause
@@ -67,4 +67,15 @@ spec:
             requests:
               cpu: 1m
               memory: 4Mi
+      volumes:
+        - name: dev
+          hostPath:
+            path: /dev
+        - name: run-lvm
+          hostPath:
+            path: /run/lvm
+            type: DirectoryOrCreate
+        - name: sys
+          hostPath:
+            path: /sys
 {{- end }}

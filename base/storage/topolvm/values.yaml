@@ -1,12 +1,13 @@
 # Pre-deploy DaemonSet that creates the LVM volume group on every node
 # before topolvm-node consumes it. Idempotent: skips if VG already exists.
-# Requires the Talos lvm2 system extension on the host (binaries reached via nsenter PID 1).
+# Runs lvm2 inside the container (Talos has no host shell to nsenter into) with
+# /dev hostPath-mounted. The container installs lvm2 from alpine at startup.
 # If volumeGroup changes here, also update topolvm.lvmd.deviceClasses[].volume-group below.
 vgInit:
   enabled: true
   device: /dev/sdb
   volumeGroup: datavg
-  image: debian:bookworm-slim
+  image: alpine:3.19
 
 topolvm:
   snapshot:
