@@ -73,7 +73,7 @@ spec:
     spec:
       project: default
       source:
-        repoURL: https://tfs.ext.icrc.org/ICRCCollection/Hybrid%20Cloud%20Architecture/_git/service_redbox_gitops  # CHANGEME
+        repoURL: https://github.com/damhau/talos-gitops.git  # CHANGEME
         targetRevision: main
         path: "{{ .path }}"
         kustomize:
