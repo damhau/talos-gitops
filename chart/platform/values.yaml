@@ -1,0 +1,61 @@
+# Cluster identity. Overridden per-cluster by clusters/<name>/values.yaml.
+cluster:
+  name: ""
+  domain: ""
+
+# Source repo coordinates used by every Application this chart renders.
+repo:
+  url: https://github.com/damhau/talos-gitops.git
+  revision: main
+
+# The platform catalog. Edits here apply fleet-wide.
+components:
+  helm:
+    - { name: cert-manager,        path: base/security/cert-manager,          namespace: cert-manager,    wave: 1 }
+    - { name: topolvm,             path: base/storage/topolvm,                namespace: topolvm-system,  wave: 1 }
+    - { name: csi-driver-smb,      path: base/storage/csi-driver-smb,         namespace: kube-system,     wave: 1 }
+    - { name: traefik,             path: base/ingress/traefik,                namespace: traefik,         wave: 2 }
+    - { name: tls,                 path: base/security/tls,                   namespace: cert-manager,    wave: 3 }
+    - { name: metrics-server,      path: base/monitoring/metrics-server,      namespace: kube-system,     wave: 4 }
+    - { name: prometheus-operator, path: base/monitoring/prometheus-operator, namespace: monitoring,      wave: 4 }
+    - { name: victorialogs,        path: base/logging/victorialogs,           namespace: logging,         wave: 4 }
+    - { name: vector,              path: base/logging/vector,                 namespace: logging,         wave: 4 }
+    - { name: authelia,            path: base/security/authelia,              namespace: authelia,        wave: 4 }
+    - { name: k8up,                path: base/storage/k8up,                   namespace: k8up,            wave: 5 }
+    - { name: restic-rest-server,  path: base/storage/restic-rest-server,     namespace: restic,          wave: 5 }
+    - { name: console,             path: base/virtualization/console,         namespace: console,         wave: 6 }
+    - { name: argocd-config,       path: base/management/argocd-config,       namespace: argocd,          wave: 7 }
+    - { name: launcher,            path: base/apps/launcher,                  namespace: launcher,        wave: 8 }
+
+  # hostPrefix is the subdomain prefix the ingress-host Component rewrites to.
+  # Omit when the component has no Ingress/IngressRoute/CDI — skips the kustomize patch block.
+  kustomize:
+    - { name: external-snapshotter, path: base/storage/external-snapshotter,      namespace: kube-system,      wave: 0 }
+    - { name: multus-cni,           path: base/virtualization/multus-cni,         namespace: kube-system,      wave: 5 }
+    - { name: kubernetes-nmstate,   path: base/virtualization/kubernetes-nmstate, namespace: nmstate,          wave: 5 }
+    - { name: kubevirt,             path: base/virtualization/kubevirt,           namespace: kubevirt,         wave: 5 }
+    - { name: cdi,                  path: base/virtualization/cdi,                namespace: cdi,              wave: 5, hostPrefix: cdi-uploadproxy }
+    - { name: kubevirt-manager,     path: base/virtualization/kubevirt-manager,   namespace: kubevirt-manager, wave: 6, hostPrefix: kubevirt-manager }
+    - { name: podinfo,              path: base/apps/podinfo,                      namespace: podinfo,          wave: 7, hostPrefix: podinfo }
+
+# Per-component Helm valuesObject overrides. Merged into each helm Application's
+# valuesObject by the AppSet template. Keys must match components.helm[].name.
+componentValues: {}
+
+# Per-component Argo CD ignoreDifferences entries. Keys must match the component name.
+ignoreDifferences:
+  kubevirt:
+    - group: kubevirt.io
+      kind: KubeVirt
+      jsonPointers:
+        - /spec/configuration
+        - /spec/customizeComponents
+        - /spec/certificateRotateStrategy
+        - /spec/workloadUpdateStrategy
+        - /status
+  cdi:
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+      name: cdis.cdi.kubevirt.io
+      jsonPointers:
+        - /spec

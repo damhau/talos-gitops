@@ -8,3 +8,6 @@ resources:
   - deployment.yaml
   - service.yaml
   - ingress.yaml
+
+components:
+  - ../../../components/ingress-host

@@ -1,0 +1,165 @@
+{{- /*
+  Renders one ApplicationSet per cluster.
+
+  - Helm components: multi-source Application. The first source is the chart path
+    with valuesObject merging global.* and per-component componentValues[<name>].
+    The second source is a `ref: values` so Argo also tracks clusters/<cluster>/values.yaml.
+  - Kustomize components: single-source Application. When the component has a
+    hostPrefix, an extra kustomize.patches block rewrites the cluster-domain
+    ConfigMap (consumed by the shared ingress-host Component's replacements).
+  - Per-component ignoreDifferences are looked up from .Values.ignoreDifferences.
+
+  Helm renders this file, then ApplicationSet's goTemplate engine renders the
+  emitted YAML. Strings that must reach ApplicationSet unevaluated are wrapped
+  `{{ ` `` `{{ .field }}` `` ` }}`.
+*/ -}}
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: platform
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=zero"]
+  strategy:
+    type: RollingSync
+    rollingSync:
+      steps:
+        {{- range $w := until 9 }}
+        - matchExpressions:
+            - { key: wave, operator: In, values: ["{{ $w }}"] }
+        {{- end }}
+  generators:
+    - list:
+        elements:
+          {{- range $c := .Values.components.helm }}
+          - name: {{ $c.name | quote }}
+            path: {{ $c.path | quote }}
+            namespace: {{ $c.namespace | quote }}
+            wave: {{ $c.wave | quote }}
+            type: "helm"
+            componentValues:
+              {{- $cv := index $.Values.componentValues $c.name | default dict }}
+              {{- toYaml $cv | nindent 14 }}
+            ignoreDifferences:
+              {{- $id := index $.Values.ignoreDifferences $c.name | default list }}
+              {{- toYaml $id | nindent 14 }}
+          {{- end }}
+          {{- range $c := .Values.components.kustomize }}
+          - name: {{ $c.name | quote }}
+            path: {{ $c.path | quote }}
+            namespace: {{ $c.namespace | quote }}
+            wave: {{ $c.wave | quote }}
+            type: "kustomize"
+            hostPrefix: {{ default "" $c.hostPrefix | quote }}
+            ignoreDifferences:
+              {{- $id := index $.Values.ignoreDifferences $c.name | default list }}
+              {{- toYaml $id | nindent 14 }}
+          {{- end }}
+  template:
+    metadata:
+      name: "{{ `{{ .name }}` }}"
+      namespace: argocd
+      labels:
+        wave: "{{ `{{ .wave }}` }}"
+        cluster: {{ .Values.cluster.name | quote }}
+        type: "{{ `{{ .type }}` }}"
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: default
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "{{ `{{ .namespace }}` }}"
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - ServerSideApply=true
+  templatePatch: |
+    spec:
+      {{ `{{- if eq .type "helm" }}` }}
+      sources:
+        - repoURL: {{ .Values.repo.url }}
+          targetRevision: {{ .Values.repo.revision }}
+          path: "{{ `{{ .path }}` }}"
+          helm:
+            releaseName: "{{ `{{ .name }}` }}"
+            valueFiles:
+              - $values/clusters/{{ .Values.cluster.name }}/values.yaml
+            valuesObject:
+              global:
+                domain: {{ .Values.cluster.domain }}
+                cluster: {{ .Values.cluster.name }}
+              {{ `{{- with .componentValues }}` }}
+              {{ `{{- toYaml . | nindent 14 }}` }}
+              {{ `{{- end }}` }}
+        - repoURL: {{ .Values.repo.url }}
+          targetRevision: {{ .Values.repo.revision }}
+          ref: values
+      {{ `{{- else if and (eq .type "kustomize") (ne .hostPrefix "") }}` }}
+      source:
+        repoURL: {{ .Values.repo.url }}
+        targetRevision: {{ .Values.repo.revision }}
+        path: "{{ `{{ .path }}` }}"
+        kustomize:
+          commonLabels:
+            cluster: {{ .Values.cluster.name }}
+          patches:
+            - target:
+                kind: ConfigMap
+                name: cluster-domain
+              patch: |-
+                - op: replace
+                  path: /data/host
+                  value: "{{ `{{ .hostPrefix }}` }}.{{ .Values.cluster.domain }}"
+                - op: replace
+                  path: /data/routeMatch
+                  value: "Host(`{{ `{{ .hostPrefix }}` }}.{{ .Values.cluster.domain }}`)"
+                - op: replace
+                  path: /data/uploadProxyUrl
+                  value: "https://{{ `{{ .hostPrefix }}` }}.{{ .Values.cluster.domain }}"
+          replacements:
+            - source:
+                kind: ConfigMap
+                name: cluster-domain
+                fieldPath: data.host
+              targets:
+                - select:
+                    kind: Ingress
+                  fieldPaths:
+                    - spec.rules.*.host
+            - source:
+                kind: ConfigMap
+                name: cluster-domain
+                fieldPath: data.routeMatch
+              targets:
+                - select:
+                    kind: IngressRoute
+                  fieldPaths:
+                    - spec.routes.*.match
+            - source:
+                kind: ConfigMap
+                name: cluster-domain
+                fieldPath: data.uploadProxyUrl
+              targets:
+                - select:
+                    kind: CDI
+                    name: cdi
+                  fieldPaths:
+                    - spec.config.uploadProxyURLOverride
+      {{ `{{- else }}` }}
+      source:
+        repoURL: {{ .Values.repo.url }}
+        targetRevision: {{ .Values.repo.revision }}
+        path: "{{ `{{ .path }}` }}"
+        kustomize:
+          commonLabels:
+            cluster: {{ .Values.cluster.name }}
+      {{ `{{- end }}` }}
+      {{ `{{- with .ignoreDifferences }}` }}
+      ignoreDifferences:
+      {{ `{{- toYaml . | nindent 8 }}` }}
+      {{ `{{- end }}` }}

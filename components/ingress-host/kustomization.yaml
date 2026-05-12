@@ -1,0 +1,9 @@
+# Component just ships the placeholder cluster-domain ConfigMap.
+# The Argo CD Application's kustomize section (rendered by chart/platform/templates/appset.yaml)
+# patches the CM with per-cluster values AND runs the replacements that apply those
+# values to Ingress/IngressRoute/CDI resources — both in the same kustomization so
+# patches process before replacements (which is the order kustomize enforces).
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+resources:
+  - cluster-domain.yaml

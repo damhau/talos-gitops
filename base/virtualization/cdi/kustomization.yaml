@@ -5,3 +5,6 @@ resources:
   - https://github.com/kubevirt/containerized-data-importer/releases/download/v1.64.0/cdi-operator.yaml
   - cdi-cr.yaml
   - cdi-uploadproxy-ingress.yaml
+
+components:
+  - ../../../components/ingress-host

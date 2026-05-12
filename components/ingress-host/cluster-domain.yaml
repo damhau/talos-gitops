@@ -1,0 +1,11 @@
+# Carrier ConfigMap for kustomize replacements. Each cluster's Argo CD Application
+# overwrites these values via kustomize.patches (see chart/platform/templates/appset.yaml).
+# No namespace — inherits from the consuming kustomization.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-domain
+data:
+  host: "PLACEHOLDER"
+  routeMatch: "PLACEHOLDER"
+  uploadProxyUrl: "PLACEHOLDER"
