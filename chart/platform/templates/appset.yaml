@@ -38,6 +38,7 @@ spec:
             namespace: {{ $c.namespace | quote }}
             wave: {{ $c.wave | quote }}
             type: "helm"
+            privileged: {{ default false $c.privileged }}
             componentValues:
               {{- /*
                 Merge componentDefaults (cluster-aware, may contain templated strings)
@@ -61,6 +62,7 @@ spec:
             namespace: {{ $c.namespace | quote }}
             wave: {{ $c.wave | quote }}
             type: "kustomize"
+            privileged: {{ default false $c.privileged }}
             hostPrefix: {{ default "" $c.hostPrefix | quote }}
             ignoreDifferences:
               {{- $id := index $.Values.ignoreDifferences $c.name | default list }}
@@ -90,6 +92,14 @@ spec:
           - ServerSideApply=true
   templatePatch: |
     spec:
+      {{ `{{- if .privileged }}` }}
+      syncPolicy:
+        managedNamespaceMetadata:
+          labels:
+            pod-security.kubernetes.io/enforce: privileged
+            pod-security.kubernetes.io/audit: privileged
+            pod-security.kubernetes.io/warn: privileged
+      {{ `{{- end }}` }}
       {{ `{{- if eq .type "helm" }}` }}
       sources:
         - repoURL: {{ .Values.repo.url }}

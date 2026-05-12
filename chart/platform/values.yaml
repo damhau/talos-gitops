@@ -11,15 +11,17 @@ repo:
 # The platform catalog. Edits here apply fleet-wide.
 components:
   helm:
+    # privileged: true → ArgoCD labels the destination namespace with PSA `privileged`
+    # so Talos's baseline-default cluster admits hostPath / privileged / hostPID workloads.
     - { name: cert-manager,        path: base/security/cert-manager,          namespace: cert-manager,    wave: 1 }
-    - { name: topolvm,             path: base/storage/topolvm,                namespace: topolvm-system,  wave: 1 }
+    - { name: topolvm,             path: base/storage/topolvm,                namespace: topolvm-system,  wave: 1, privileged: true }
     - { name: csi-driver-smb,      path: base/storage/csi-driver-smb,         namespace: kube-system,     wave: 1 }
     - { name: traefik,             path: base/ingress/traefik,                namespace: traefik,         wave: 2 }
     - { name: tls,                 path: base/security/tls,                   namespace: cert-manager,    wave: 3 }
     - { name: metrics-server,      path: base/monitoring/metrics-server,      namespace: kube-system,     wave: 4 }
-    - { name: prometheus-operator, path: base/monitoring/prometheus-operator, namespace: monitoring,      wave: 4 }
-    - { name: victorialogs,        path: base/logging/victorialogs,           namespace: logging,         wave: 4 }
-    - { name: vector,              path: base/logging/vector,                 namespace: logging,         wave: 4 }
+    - { name: prometheus-operator, path: base/monitoring/prometheus-operator, namespace: monitoring,      wave: 4, privileged: true }
+    - { name: victorialogs,        path: base/logging/victorialogs,           namespace: logging,         wave: 4, privileged: true }
+    - { name: vector,              path: base/logging/vector,                 namespace: logging,         wave: 4, privileged: true }
     - { name: authelia,            path: base/security/authelia,              namespace: authelia,        wave: 4 }
     - { name: k8up,                path: base/storage/k8up,                   namespace: k8up,            wave: 5 }
     - { name: restic-rest-server,  path: base/storage/restic-rest-server,     namespace: restic,          wave: 5 }
@@ -32,9 +34,9 @@ components:
   kustomize:
     - { name: external-snapshotter, path: base/storage/external-snapshotter,      namespace: kube-system,      wave: 0 }
     - { name: multus-cni,           path: base/virtualization/multus-cni,         namespace: kube-system,      wave: 5 }
-    - { name: kubernetes-nmstate,   path: base/virtualization/kubernetes-nmstate, namespace: nmstate,          wave: 5 }
-    - { name: kubevirt,             path: base/virtualization/kubevirt,           namespace: kubevirt,         wave: 5 }
-    - { name: cdi,                  path: base/virtualization/cdi,                namespace: cdi,              wave: 5, hostPrefix: cdi-uploadproxy }
+    - { name: kubernetes-nmstate,   path: base/virtualization/kubernetes-nmstate, namespace: nmstate,          wave: 5, privileged: true }
+    - { name: kubevirt,             path: base/virtualization/kubevirt,           namespace: kubevirt,         wave: 5, privileged: true }
+    - { name: cdi,                  path: base/virtualization/cdi,                namespace: cdi,              wave: 5, privileged: true, hostPrefix: cdi-uploadproxy }
     - { name: kubevirt-manager,     path: base/virtualization/kubevirt-manager,   namespace: kubevirt-manager, wave: 6, hostPrefix: kubevirt-manager }
     - { name: podinfo,              path: base/apps/podinfo,                      namespace: podinfo,          wave: 7, hostPrefix: podinfo }
 
@@ -47,6 +49,12 @@ components:
 # the domain). Put genuine per-cluster knobs (credentials, fileserver hostnames, etc.) in
 # clusters/<name>/values.yaml componentValues instead.
 componentDefaults:
+  # Talos's kubelet uses a self-signed cert; metrics-server can't verify it.
+  metrics-server:
+    metrics-server:
+      args:
+        - --kubelet-insecure-tls
+
   prometheus-operator:
     kube-prometheus-stack:
       grafana:
