@@ -1,0 +1,203 @@
+authelia:
+  pod:
+    kind: Deployment
+    replicas: 1
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 300m
+        memory: 256Mi
+    extraVolumeMounts:
+      - name: users
+        mountPath: /users
+        readOnly: true
+    extraVolumes:
+      - name: users
+        secret:
+          secretName: authelia-users
+
+  ingress:
+    enabled: false
+    traefikCRD:
+      enabled: false
+
+  configMap:
+    theme: light
+
+    authentication_backend:
+      file:
+        enabled: true
+        path: /users/users_database.yml
+        watch: true
+        password:
+          algorithm: bcrypt
+          bcrypt:
+            cost: 12
+      ldap:
+        enabled: false
+
+    session:
+      name: authelia_session
+      same_site: lax
+      expiration: 12h
+      inactivity: 5m
+      remember_me: 1M
+      encryption_key:
+        value: 'b678125b5d603a03623cfafd4bc81e9317a890abafd117cfa12cb789feabfe0f'
+      cookies:
+        - domain: dha.dhconsulting.ch
+          subdomain: auth
+          default_redirection_url: https://launcher.dha.dhconsulting.ch
+
+    storage:
+      local:
+        enabled: true
+        path: /config/db.sqlite3
+      encryption_key:
+        value: '858dd4792693e12b27a656cfe26d6d98e3231aab2adc47ef0d1b2bb82420f563'
+
+    notifier:
+      filesystem:
+        enabled: true
+        filename: /config/notification.txt
+
+    access_control:
+      default_policy: one_factor
+
+    identity_providers:
+      oidc:
+        enabled: true
+        hmac_secret:
+          value: 'dfffc9e16cb58192c9b1a4eb1944c228be72aadffc79e8f224a2d1f8a1c0ae4e'
+        jwks:
+          - key_id: main
+            algorithm: RS256
+            use: sig
+            key:
+              value: |
+                -----BEGIN PRIVATE KEY-----
+                MIIJQgIBADANBgkqhkiG9w0BAQEFAASCCSwwggkoAgEAAoICAQCr8NegL4fNayru
+                QmAh1HbE+FHxvSKa8Aq3jeGXBUmY8h8HjUV+4i4bsGaOsIT0boiJTJfyGkYRVZuX
+                FCxrO2r/dc5t53ucSbO/6IrEAgjVj/B7+QE65XBSCSoRiV2sCMD3g3jC/7Ad6Rgh
+                jz0//OWp8maiSncLvPhgTr+ke1iUIqACBj2ERLexpDcIRF4dDxtxkXwyeteYFTu8
+                yLHnw7REaIxpcPQPZDbRBx055kXHg5aYJBUZvv22qvlRrRvI5QgpXGkkx18neeoZ
+                4/XtgYC8TgFcaRi8lWP1jJtWNmd4/J+3xQwAhlQ/Mga2Mfw2ruG4BZgr0Z1s3b2S
+                9Upukb/+ylxZwLM6KIfpZ+k0DXFZFL/xzTdQkmvp5JLUrAblbimIzmWFij6VQI5z
+                0CxSC9K7wT1AUVvY7pM7aenZrX3rKzEMt6fnFkksU8lh477IdxaXj+rheoQdFeaK
+                V1L9Ny+prD1HN2LNJ4rs3ePgUB0Bd9UpYJjFWeVCIB3OIeUKikWw4aWRgKgrY+d4
+                MtARmIE7M09yCv1NbeYqL4hCdzN9CItHvzz3nW7faf3SS+2h4/WT1thFF7PXtA4K
+                BqBSUcYbTpC/Xf17sabyrj0AULBdmpCEeAJDwvYWY2BKjCaNsJ0FCAA7oh1WfKHC
+                +Q/ned2tuAdJTT2TEHtgXcNugfztjQIDAQABAoICADzjRPiM3GJ6GPHWv4Q7YPPP
+                m/UnLSIA70qhC8oXLUDkPOjHtlyAbCOSDD9rcym8Gs3EOeqaM0XgMwEFO9WdbP6a
+                EUgKOVPXJbhH+RwAPHCkUF0WiMD6jxP9+s/K/Uj2sJ72B8XGFfABo3H+74nBXPMZ
+                zA6coBugB7TTLjppE60htdgBrbcxPnvB01syGsHfn7BP/NNDfSV2H3ly+M1CGIxB
+                GbgdL9BjhKXxBwCB8yP8DVBDNtWvNNmDIlcyHiy+Lm23M+S6VY/9NFGG0IgS3CvS
+                09iNvxzJKmTCLiARlALcMxM4zE9DQoI+jPHoMZCLzZMFKCYcTMtImuF3y6vsITjc
+                iASU5q1dbCYl32td3CzsESY8gRCVGwCwr2ztY/ekbWKMiEgW9HNdk9F2JUVNlTxL
+                zVdt9mWVcWt1RqZ6qcfE1IRetX2N/+kVhnceHTZnoAz+QNlOjscH0AMPVR+ZvnBI
+                0frG5OFl9TPQ00G54Mo4Yu+YL/E32FtJAyxZINN82vmDA4WsohYy14U0c4dP7zzC
+                6H1C9vrTyMjcVmPYFKzypaE2pm6BZJOZWSTttIUQSuzWTiK8dXHZJbbbsz/vTW3D
+                4zbd3GHEWgoIf7VCEbQ9z0nANVgZoH57eD5MFUOpZSzQtaq/W3WUlO6oX11TlgIB
+                klD/9v9aF9DYJi7aREdhAoIBAQDTDtqzmjMbXwpEbW+G8NNC89CXeghTWaR0FLHV
+                ymnxibhDye6eiueaq6gbqq4pZgm9dbmuB3QKm55Foq07F7L85d6MfSlV2tfQwCrL
+                hjJpWMQqahmFcndsSaVnUNIS+qy9hnWK/FxBzhWD20UmvU567Kl+PU3VQ+YEqw9R
+                4tCYpM4DQr6UuMRMp4LB89tgV6MB+dBAXe3NFY9vps/R+KVRI5dh8UmPw1j8r8Dq
+                q87TdkBW5hhCh+OZpOnvIENO87VH/jXTAis/wHxkJM2jefH4ITWO3ke9XVLzoEua
+                wpEMoy2wYYCtgh0o7CwoTUL24kMzGIuL4QP3L9KYmlAksBZrAoIBAQDQjaNxOGr8
+                /nl1IyfU3nkyn7eEjN4beArkW5H5FVWJc+Ey3E+J4Dd3CV6csbImFLGmfGS3HuDV
+                PcJOs2jK0X/DYZTZyL3jwdIGcDwS93/ZyDASqhW1RD0E3oRnfaK5+yo15znhtEUv
+                QvRn/JOapziUGp+HpWaqYcnek2zfkjElF6684q8Xnonktdqon4uw5fJbGtvRoqm5
+                TqfuCpF1v4IgNlEwS1u465/dUwdVJspzmNxa2aGkGvDahplp5fEn6f4O208zaAlm
+                NblqjLToQp3wlNFBODBzdKt6cRXAMtZEv/jPhKjl4550r3bmfZJjh6omG/uXF47/
+                n/jmhzMCSNnnAoIBAHvXkH6ocWqTJtwl9rYQY3Y6yF/JrE70H6o5ZmwTHH0tGWE1
+                gP2odePs63Rof08tX3O7O1uhZfa/f2xO2yT8b/szCpYW7wVApzgHOlU4BiaIfnqA
+                zT7ffrGcuSBZbRrT2j5PQnNuRtgaC8fWBsqHdCBu87luUVhdQf/lO9UJqOqYcYW6
+                SUfM7uontHMIGuZ6Jd0H76mFM/8Nsp+KGxGSu7ZTkwVWZpqjvnhuzF0muPKdxXz4
+                AK4xPFywRtAYd0ZBfFKlGIIbGLOMx7CfY8aTzGaTXfDZ/vBfbUgk+5fwqNnoeeuw
+                Gqg029ViVzrCsxNYiqPVuDQ4sXH+rqz6hyIv7McCggEBAMGhwA5vA2bCHqLTcTgD
+                FyQZhppa8B0w52v+WRma5UAphv1h77djphuvZ1i042LX89lPxXMACF/0Z2QKz1EA
+                Ek+lWj6aUzQT0JyJuD0j7mCVrYymvmD+amkK8IPl8iAbQqWpeeRFK7clwyaJK8J7
+                X9yim1umBhxLjtJIrt0lLtvxkRtunIKhgAYJkmrdNyWXWd2coluRW2Ph06j/xu48
+                UOT3iYn9bbvTiSpE3JoC2hVZ572yMpHbMaSzM91O0QjuCCRjGrXv8kojt3NmENFU
+                iK/GfELBmLqZqFyWgktg5/ANDUYfNXG8VHKiNxLpo/ElFKUtdfpitTJBpSbkgEeu
+                vCECggEAGchCYCk/1Rx/q1cj3cSdWnCe3wjO7suihQXYCzH+8oT5kkAu0X+Id5KH
+                gDPC8hfsjpJ89FuI2v/vadruhqO61G3OpYFq5FSwFfPvZ1P33/zxEwvSHtxfwF4H
+                GbmMkRof4/HeWthXGUqpO3e29t9kwtGLX++IZGfOhW3S5a/fyy2EP2BFegvmGZiG
+                crlg6/c+IsRJT+2VQtMepsi3Sk3bXT94yLfXjna+azqgELpWhhnxGuc9uMao8YJT
+                N/VWZCu7ETgyMRcHBd2dc1SsVrq4j1C9aUV8DUTfeUjjWnssArdBjtcIpiN7x9fP
+                DvhiW2OtMFnFfJHiRucAwzldOBP4Hw==
+                -----END PRIVATE KEY-----
+        cors:
+          endpoints:
+            - authorization
+            - token
+            - userinfo
+            - revocation
+            - introspection
+          allowed_origins_from_client_redirect_uris: true
+        clients:
+          - client_id: grafana
+            client_name: Grafana
+            client_secret: '$pbkdf2-sha512$310000$E45bEthWr8A3/IMLAmhImQ$VTpPaY0LsollUDpJiPoE4Z.UU55mleW4O9WdJz65Bq5D9XFr1g4MmavTsC2e64vfkUVZDuWctrAxil0py8MSKQ'
+            authorization_policy: one_factor
+            consent_mode: implicit
+            require_pkce: true
+            pkce_challenge_method: S256
+            redirect_uris:
+              - https://grafana.dha.dhconsulting.ch/login/generic_oauth
+            scopes:
+              - openid
+              - profile
+              - email
+              - groups
+            response_types:
+              - code
+            grant_types:
+              - authorization_code
+            token_endpoint_auth_method: client_secret_basic
+
+          - client_id: argocd
+            client_name: Argo CD
+            client_secret: '$pbkdf2-sha512$310000$886qAF.DrXVG99BjziyF7Q$oiHilKQKjDPBLpUBXxCo2RGWQBBIoDvHm3rjYs8wD1T13rVTNQu1u07UX.19El6q.xWix4luMTlUdtQ9o1KlxA'
+            authorization_policy: one_factor
+            consent_mode: implicit
+            redirect_uris:
+              - https://argocd.dha.dhconsulting.ch/auth/callback
+            scopes:
+              - openid
+              - profile
+              - email
+              - groups
+            response_types:
+              - code
+            grant_types:
+              - authorization_code
+            token_endpoint_auth_method: client_secret_basic
+
+          - client_id: argocd-cli
+            client_name: Argo CD CLI
+            public: true
+            authorization_policy: one_factor
+            consent_mode: implicit
+            require_pkce: true
+            pkce_challenge_method: S256
+            redirect_uris:
+              - http://localhost:8085/auth/callback
+            scopes:
+              - openid
+              - offline_access
+              - email
+              - groups
+            grant_types:
+              - authorization_code
+              - refresh_token
+            token_endpoint_auth_method: none
+
+  persistence:
+    enabled: true
+    storageClass: topolvm-provisioner
+    size: 1Gi
+    accessModes:
+      - ReadWriteOnce

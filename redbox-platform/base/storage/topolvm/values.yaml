@@ -1,0 +1,53 @@
+topolvm:
+  snapshot:
+    enabled: true
+  controller:
+    replicaCount: 1
+    prometheus:
+      podMonitor:
+        enabled: true
+        additionalLabels:
+          release: prometheus-operator
+  cert-manager:
+    enabled: false  # Set to true if cert-manager is not already installed
+  storageClasses:
+    - name: topolvm-provisioner
+      storageClass:
+        fsType: xfs
+        isDefaultClass: true
+        volumeBindingMode: WaitForFirstConsumer
+        allowVolumeExpansion: true
+        additionalParameters:
+          topolvm.io/device-class: default
+    - name: topolvm-provisioner-thin
+      storageClass:
+        fsType: xfs
+        isDefaultClass: false
+        volumeBindingMode: WaitForFirstConsumer
+        allowVolumeExpansion: true
+        additionalParameters:
+          topolvm.io/device-class: thin
+  lvmd:
+    deviceClasses:
+      - name: default
+        volume-group: datavg
+        default: true
+        spare-gb: 10
+      - name: thin
+        volume-group: datavg
+        spare-gb: 10
+        type: thin
+        thin-pool:
+          name: pool0
+          overprovision-ratio: 5.0
+    prometheus:
+      podMonitor:
+        enabled: true
+        additionalLabels:
+          release: prometheus-operator
+  node:
+    prometheus:
+      podMonitor:
+        enabled: true
+        additionalLabels:
+          release: prometheus-operator

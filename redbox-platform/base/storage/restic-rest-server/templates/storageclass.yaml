@@ -1,0 +1,15 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: {{ .Values.storage.storageClassName }}
+provisioner: smb.csi.k8s.io
+parameters:
+  source: {{ .Values.smb.source | quote }}
+  csi.storage.k8s.io/node-stage-secret-name: restic-smb-credentials
+  csi.storage.k8s.io/node-stage-secret-namespace: {{ .Release.Namespace }}
+reclaimPolicy: Retain
+volumeBindingMode: Immediate
+mountOptions:
+  - dir_mode=0777
+  - file_mode=0777
+  - vers=3.0

@@ -1,0 +1,7 @@
+apiVersion: v2
+name: console
+version: 0.1.0
+dependencies:
+  - name: openshift-console
+    version: 0.3.6
+    repository: https://av1o.gitlab.io/charts

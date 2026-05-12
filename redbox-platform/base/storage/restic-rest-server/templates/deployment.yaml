@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: restic-rest-server
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: restic-rest-server
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: restic-rest-server
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: restic-rest-server
+    spec:
+      containers:
+        - name: rest-server
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: IfNotPresent
+          args:
+            - "--path"
+            - "/data"
+            - "--listen"
+            - ":{{ .Values.service.port }}"
+            - "--prometheus"
+            - "--htpasswd-file"
+            - "/auth/.htpasswd"
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: htpasswd
+              mountPath: /auth
+              readOnly: true
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: restic-rest-server-data
+        - name: htpasswd
+          secret:
+            secretName: restic-rest-server-htpasswd
+            items:
+              - key: .htpasswd
+                path: .htpasswd

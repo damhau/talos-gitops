@@ -1,0 +1,9 @@
+openshift-console:
+  rbac:
+    enabled: false
+  console:
+    baseUrl: https://console.local
+    oidc:
+      enabled: false
+  ingress:
+    enabled: false

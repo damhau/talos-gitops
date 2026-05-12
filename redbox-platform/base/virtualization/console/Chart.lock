@@ -1,0 +1,6 @@
+dependencies:
+- name: openshift-console
+  repository: https://av1o.gitlab.io/charts
+  version: 0.3.6
+digest: sha256:679fd21be1d6b4af38776edfdf2c557f6f620f92aa45c511acb8d53f6ed2a1b0
+generated: "2026-02-11T13:33:54.796119889+01:00"

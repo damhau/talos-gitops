@@ -1,0 +1,10 @@
+victoria-logs-single:
+  fullnameOverride: victorialogs
+  server:
+    retentionPeriod: 7d
+    persistentVolume:
+      enabled: true
+      storageClassName: topolvm-provisioner
+      size: 10Gi
+    ingress:
+      enabled: false

@@ -1,0 +1,16 @@
+{{- if .Values.metrics.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: restic-rest-server
+  namespace: {{ .Release.Namespace }}
+  labels:
+    release: prometheus-operator
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: restic-rest-server
+  podMetricsEndpoints:
+    - port: http
+      path: /metrics
+{{- end }}

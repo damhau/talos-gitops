@@ -1,0 +1,30 @@
+traefik:
+  ingressClass:
+    name: traefik
+  providers:
+    kubernetesIngress:
+      publishedService:
+        enabled: true
+  deployment:
+    replicas: 1
+  service:
+    type: NodePort
+  ports:
+    web:
+      nodePort: 80
+      http:
+        redirections:
+          entryPoint:
+            to: websecure
+            scheme: https
+            permanent: true
+    websecure:
+      nodePort: 443
+      transport:
+        respondingTimeouts:
+          readTimeout: 0
+          idleTimeout: 0
+  tlsStore:
+    default:
+      defaultCertificate:
+        secretName: wildcard-tls

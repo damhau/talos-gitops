@@ -1,0 +1,4 @@
+apiVersion: v2
+name: tls
+version: 0.1.0
+description: Self-signed CA and wildcard certificate for ingress TLS

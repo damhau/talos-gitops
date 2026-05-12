@@ -1,0 +1,69 @@
+kube-prometheus-stack:
+  fullnameOverride: prometheus
+  crds:
+    enabled: true
+  # Operator only - instances are managed via CRs in base/monitoring/prometheus
+  prometheus:
+    enabled: true
+    prometheusSpec:
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            storageClassName: topolvm-provisioner
+            accessModes:
+              - ReadWriteOnce
+            resources:
+              requests:
+                storage: 10Gi
+    ingress:
+      enabled: false
+  alertmanager:
+    enabled: true
+    ingress:
+      enabled: false
+  grafana:
+    enabled: true
+    adminPassword: admin
+    assertNoLeakedSecrets: false
+    grafana.ini:
+      server:
+        root_url: https://grafana.local
+      auth.generic_oauth:
+        enabled: true
+        name: Authelia
+        allow_sign_up: true
+        client_id: grafana
+        client_secret: grafana-authelia-secret
+        scopes: openid profile email groups
+        auth_url: https://auth.local/api/oidc/authorization
+        token_url: https://auth.local/api/oidc/token
+        api_url: https://auth.local/api/oidc/userinfo
+        use_pkce: true
+        tls_skip_verify_insecure: true
+    ingress:
+      enabled: false
+    additionalDataSources:
+      - name: VictoriaLogs
+        type: victoriametrics-logs-datasource
+        access: proxy
+        url: http://victorialogs-server.logging.svc:9428
+        isDefault: false
+    plugins:
+      - victoriametrics-logs-datasource
+    persistence:
+      enabled: true
+      storageClassName: topolvm-provisioner
+      size: 5Gi
+  nodeExporter:
+    enabled: true
+  kubeStateMetrics:
+    enabled: true
+  prometheusOperator:
+    enabled: true
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi

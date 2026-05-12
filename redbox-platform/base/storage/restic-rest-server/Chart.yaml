@@ -1,0 +1,4 @@
+apiVersion: v2
+name: restic-rest-server
+version: 0.1.0
+description: restic REST server backed by an SMB PVC; backup target for k8up

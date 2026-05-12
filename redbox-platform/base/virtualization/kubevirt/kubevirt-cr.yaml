@@ -1,0 +1,23 @@
+apiVersion: kubevirt.io/v1
+kind: KubeVirt
+metadata:
+  name: kubevirt
+  namespace: kubevirt
+spec:
+  infra:
+    replicas: 1
+  monitorNamespace: kubevirt
+  serviceMonitorNamespace: kubevirt
+  monitorAccount: prometheus-prometheus
+  configuration:
+    developerConfiguration:
+      featureGates:
+        - HotplugVolumes
+        - VMExport
+        - Snapshot
+        # - DeclarativeHotplugVolumes
+        - ObjectGraph
+        - VideoConfig
+        - IncrementalBackup
+        - VolumeExpansion
+        - VMPersistentState

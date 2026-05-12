@@ -1,0 +1,170 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: dha-helm
+  namespace: argocd
+spec:
+  goTemplate: true
+  strategy:
+    type: RollingSync
+    rollingSync:
+      steps:
+        - matchExpressions:
+            - key: wave
+              operator: In
+              values:
+                - "1"
+        - matchExpressions:
+            - key: wave
+              operator: In
+              values:
+                - "2"
+        - matchExpressions:
+            - key: wave
+              operator: In
+              values:
+                - "3"
+        - matchExpressions:
+            - key: wave
+              operator: In
+              values:
+                - "4"
+        - matchExpressions:
+            - key: wave
+              operator: In
+              values:
+                - "5"
+        - matchExpressions:
+            - key: wave
+              operator: In
+              values:
+                - "6"
+        - matchExpressions:
+            - key: wave
+              operator: In
+              values:
+                - "7"
+        - matchExpressions:
+            - key: wave
+              operator: In
+              values:
+                - "8"
+  generators:
+    - matrix:
+        generators:
+          - list:
+              elements:
+                - domain: "dha.dhconsulting.ch"
+          - list:
+              elements:
+                # Helm-based components
+                - name: cert-manager
+                  path: redbox-platform/base/security/cert-manager
+                  namespace: cert-manager
+                  wave: "1"
+                - name: topolvm
+                  path: redbox-platform/base/storage/topolvm
+                  namespace: topolvm-system
+                  wave: "1"
+                - name: csi-driver-smb
+                  path: redbox-platform/base/storage/csi-driver-smb
+                  namespace: kube-system
+                  wave: "1"
+                - name: traefik
+                  path: redbox-platform/base/ingress/traefik
+                  namespace: traefik
+                  wave: "2"
+                - name: tls
+                  path: redbox-platform/base/security/tls
+                  namespace: cert-manager
+                  wave: "3"
+                - name: metrics-server
+                  path: redbox-platform/base/monitoring/metrics-server
+                  namespace: kube-system
+                  wave: "4"
+                - name: prometheus-operator
+                  path: redbox-platform/base/monitoring/prometheus-operator
+                  namespace: monitoring
+                  wave: "4"
+                - name: victorialogs
+                  path: redbox-platform/base/logging/victorialogs
+                  namespace: logging
+                  wave: "4"
+                - name: vector
+                  path: redbox-platform/base/logging/vector
+                  namespace: logging
+                  wave: "4"
+                - name: authelia
+                  path: redbox-platform/base/security/authelia
+                  namespace: authelia
+                  wave: "4"
+                - name: k8up
+                  path: redbox-platform/base/storage/k8up
+                  namespace: k8up
+                  wave: "5"
+                - name: restic-rest-server
+                  path: redbox-platform/base/storage/restic-rest-server
+                  namespace: restic
+                  wave: "5"
+                - name: console
+                  path: redbox-platform/base/virtualization/console
+                  namespace: console
+                  wave: "6"
+                - name: argocd-config
+                  path: redbox-platform/base/management/argocd-config
+                  namespace: argocd
+                  wave: "7"
+                - name: launcher
+                  path: redbox-platform/base/apps/launcher
+                  namespace: launcher
+                  wave: "8"
+  template:
+    metadata:
+      name: "helm-{{ .name }}"
+      namespace: argocd
+      labels:
+        wave: "{{ .wave }}"
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: default
+      source:
+        repoURL: https://tfs.ext.icrc.org/ICRCCollection/Hybrid%20Cloud%20Architecture/_git/service_redbox_gitops  # CHANGEME
+        targetRevision: main
+        path: "{{ .path }}"
+        helm:
+          releaseName: "{{ .name }}"
+          parameters:
+            - name: global.domain
+              value: "{{ .domain }}"
+          valuesObject:
+            openshift-console:
+              console:
+                baseUrl: "https://console.{{ .domain }}"
+            kube-prometheus-stack:
+              grafana:
+                grafana.ini:
+                  server:
+                    root_url: "https://grafana.{{ .domain }}"
+                  auth.generic_oauth:
+                    auth_url: "https://auth.{{ .domain }}/api/oidc/authorization"
+                    token_url: "https://auth.{{ .domain }}/api/oidc/token"
+                    api_url: "https://auth.{{ .domain }}/api/oidc/userinfo"
+            # restic-rest-server SMB target (placeholders — fill in for dha)
+            smb:
+              source: "//CHANGEME.dha.dhconsulting.ch/backup"
+              username: "CHANGEME"
+              password: "CHANGEME"
+            resticUsers: |
+              k8up:$2y$05$CHANGEME
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "{{ .namespace }}"
+      syncPolicy:
+        automated:
+          enabled: true
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - ServerSideApply=true

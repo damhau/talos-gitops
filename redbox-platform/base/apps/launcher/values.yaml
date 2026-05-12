@@ -1,0 +1,12 @@
+image:
+  repository: damienh/k8s_start
+  tag: v2
+  pullPolicy: Always
+
+replicaCount: 1
+
+env:
+  APPS: "argocd,console,kubevirt-manager,victorialogs,alertmanager,grafana,prometheus,podinfo"
+
+service:
+  port: 80

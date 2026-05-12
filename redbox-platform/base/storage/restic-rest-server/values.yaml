@@ -1,0 +1,23 @@
+image:
+  repository: restic/rest-server
+  tag: "0.14.0"
+
+service:
+  port: 8000
+
+storage:
+  storageClassName: restic-smb
+  size: 100Gi
+
+smb:
+  # cluster must override these via the ApplicationSet valuesObject
+  source: "//nas.example.com/backup"
+  username: "changeme"
+  password: "changeme"
+
+# htpasswd line(s); generate with `htpasswd -B -n k8up`
+resticUsers: |
+  k8up:$2y$05$REPLACEME
+
+metrics:
+  enabled: true
