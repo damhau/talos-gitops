@@ -1,0 +1,70 @@
+{{- if .Values.vgInit.enabled }}
+# Creates the LVM volume group consumed by topolvm-node on every cluster node.
+# Uses nsenter into PID 1 so the host's Talos lvm2 system extension binaries run
+# (avoids shipping lvm2 inside the container). Idempotent — re-running is a no-op.
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: topolvm-vg-init
+  labels:
+    app.kubernetes.io/name: topolvm-vg-init
+    app.kubernetes.io/part-of: topolvm
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: topolvm-vg-init
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: topolvm-vg-init
+    spec:
+      hostPID: true
+      tolerations:
+        - operator: Exists
+      initContainers:
+        - name: vg-init
+          image: {{ .Values.vgInit.image | quote }}
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: true
+          env:
+            - name: VG_NAME
+              value: {{ .Values.vgInit.volumeGroup | quote }}
+            - name: VG_DEVICE
+              value: {{ .Values.vgInit.device | quote }}
+          command:
+            - nsenter
+            - --target=1
+            - --mount
+            - --uts
+            - --ipc
+            - --net
+            - --pid
+            - --
+            - /bin/sh
+            - -c
+            - |
+              set -eu
+              host=$(hostname)
+              if vgs "$VG_NAME" >/dev/null 2>&1; then
+                echo "[$host] VG $VG_NAME already exists, skipping"
+                exit 0
+              fi
+              if [ ! -b "$VG_DEVICE" ]; then
+                echo "[$host] ERROR: $VG_DEVICE is not a block device" >&2
+                exit 1
+              fi
+              if ! pvs "$VG_DEVICE" >/dev/null 2>&1; then
+                pvcreate "$VG_DEVICE"
+              fi
+              vgcreate "$VG_NAME" "$VG_DEVICE"
+              echo "[$host] Created VG $VG_NAME on $VG_DEVICE"
+      containers:
+        # Keeps the DaemonSet pod alive after vg-init succeeds so the DS reports Ready.
+        - name: pause
+          image: registry.k8s.io/pause:3.9
+          resources:
+            requests:
+              cpu: 1m
+              memory: 4Mi
+{{- end }}
