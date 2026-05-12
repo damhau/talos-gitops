@@ -104,7 +104,7 @@ spec:
                 domain: {{ .Values.cluster.domain }}
                 cluster: {{ .Values.cluster.name }}
               {{ `{{- with .componentValues }}` }}
-              {{ `{{- toYaml . | nindent 14 }}` }}
+              {{ `{{- toYaml . | nindent 10 }}` }}
               {{ `{{- end }}` }}
         - repoURL: {{ .Values.repo.url }}
           targetRevision: {{ .Values.repo.revision }}
@@ -171,5 +171,5 @@ spec:
       {{ `{{- end }}` }}
       {{ `{{- with .ignoreDifferences }}` }}
       ignoreDifferences:
-      {{ `{{- toYaml . | nindent 8 }}` }}
+      {{ `{{- toYaml . | nindent 4 }}` }}
       {{ `{{- end }}` }}
