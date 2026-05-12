@@ -46,10 +46,7 @@ authelia:
       remember_me: 1M
       encryption_key:
         value: 'b678125b5d603a03623cfafd4bc81e9317a890abafd117cfa12cb789feabfe0f'
-      cookies:
-        - domain: dha.dhconsulting.ch
-          subdomain: auth
-          default_redirection_url: https://launcher.dha.dhconsulting.ch
+      # cookies: provided by chart/platform componentDefaults.authelia (templated against cluster.domain)
 
     storage:
       local:
@@ -137,63 +134,8 @@ authelia:
             - revocation
             - introspection
           allowed_origins_from_client_redirect_uris: true
-        clients:
-          - client_id: grafana
-            client_name: Grafana
-            client_secret: '$pbkdf2-sha512$310000$E45bEthWr8A3/IMLAmhImQ$VTpPaY0LsollUDpJiPoE4Z.UU55mleW4O9WdJz65Bq5D9XFr1g4MmavTsC2e64vfkUVZDuWctrAxil0py8MSKQ'
-            authorization_policy: one_factor
-            consent_mode: implicit
-            require_pkce: true
-            pkce_challenge_method: S256
-            redirect_uris:
-              - https://grafana.dha.dhconsulting.ch/login/generic_oauth
-            scopes:
-              - openid
-              - profile
-              - email
-              - groups
-            response_types:
-              - code
-            grant_types:
-              - authorization_code
-            token_endpoint_auth_method: client_secret_basic
-
-          - client_id: argocd
-            client_name: Argo CD
-            client_secret: '$pbkdf2-sha512$310000$886qAF.DrXVG99BjziyF7Q$oiHilKQKjDPBLpUBXxCo2RGWQBBIoDvHm3rjYs8wD1T13rVTNQu1u07UX.19El6q.xWix4luMTlUdtQ9o1KlxA'
-            authorization_policy: one_factor
-            consent_mode: implicit
-            redirect_uris:
-              - https://argocd.dha.dhconsulting.ch/auth/callback
-            scopes:
-              - openid
-              - profile
-              - email
-              - groups
-            response_types:
-              - code
-            grant_types:
-              - authorization_code
-            token_endpoint_auth_method: client_secret_basic
-
-          - client_id: argocd-cli
-            client_name: Argo CD CLI
-            public: true
-            authorization_policy: one_factor
-            consent_mode: implicit
-            require_pkce: true
-            pkce_challenge_method: S256
-            redirect_uris:
-              - http://localhost:8085/auth/callback
-            scopes:
-              - openid
-              - offline_access
-              - email
-              - groups
-            grant_types:
-              - authorization_code
-              - refresh_token
-            token_endpoint_auth_method: none
+        # clients: provided by chart/platform componentDefaults.authelia
+        # (redirect_uris are templated against cluster.domain)
 
   persistence:
     enabled: true

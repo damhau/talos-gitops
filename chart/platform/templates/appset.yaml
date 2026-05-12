@@ -39,8 +39,18 @@ spec:
             wave: {{ $c.wave | quote }}
             type: "helm"
             componentValues:
-              {{- $cv := index $.Values.componentValues $c.name | default dict }}
-              {{- toYaml $cv | nindent 14 }}
+              {{- /*
+                Merge componentDefaults (cluster-aware, may contain templated strings)
+                with componentValues (cluster-specific overrides), then tpl the YAML
+                against chart values so "{{ .Values.cluster.domain }}" resolves.
+                mergeOverwrite: later args win, so overrides take precedence over defaults.
+              */}}
+              {{- $defaults  := index $.Values.componentDefaults $c.name | default dict }}
+              {{- $overrides := index $.Values.componentValues   $c.name | default dict }}
+              {{- $merged    := mergeOverwrite (deepCopy $defaults) $overrides }}
+              {{- if $merged }}
+              {{- tpl (toYaml $merged) $ | nindent 14 }}
+              {{- end }}
             ignoreDifferences:
               {{- $id := index $.Values.ignoreDifferences $c.name | default list }}
               {{- toYaml $id | nindent 14 }}

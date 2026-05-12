@@ -38,8 +38,100 @@ components:
     - { name: kubevirt-manager,     path: base/virtualization/kubevirt-manager,   namespace: kubevirt-manager, wave: 6, hostPrefix: kubevirt-manager }
     - { name: podinfo,              path: base/apps/podinfo,                      namespace: podinfo,          wave: 7, hostPrefix: podinfo }
 
-# Per-component Helm valuesObject overrides. Merged into each helm Application's
-# valuesObject by the AppSet template. Keys must match components.helm[].name.
+# Per-component Helm valuesObject DEFAULTS. Templated with `tpl` against this chart's
+# values at render time, so strings like `{{ .Values.cluster.domain }}` resolve to the
+# current cluster's domain. Cluster-specific componentValues (in clusters/<name>/values.yaml)
+# are deep-merged on top — overrides win.
+#
+# Use this for cluster-aware values that follow a predictable pattern (URLs derived from
+# the domain). Put genuine per-cluster knobs (credentials, fileserver hostnames, etc.) in
+# clusters/<name>/values.yaml componentValues instead.
+componentDefaults:
+  prometheus-operator:
+    kube-prometheus-stack:
+      grafana:
+        grafana.ini:
+          server:
+            root_url: "https://grafana.{{ .Values.cluster.domain }}"
+          auth.generic_oauth:
+            auth_url:  "https://auth.{{ .Values.cluster.domain }}/api/oidc/authorization"
+            token_url: "https://auth.{{ .Values.cluster.domain }}/api/oidc/token"
+            api_url:   "https://auth.{{ .Values.cluster.domain }}/api/oidc/userinfo"
+
+  console:
+    openshift-console:
+      console:
+        baseUrl: "https://console.{{ .Values.cluster.domain }}"
+
+  authelia:
+    authelia:
+      configMap:
+        session:
+          cookies:
+            - domain: "{{ .Values.cluster.domain }}"
+              subdomain: auth
+              default_redirection_url: "https://launcher.{{ .Values.cluster.domain }}"
+        identity_providers:
+          oidc:
+            clients:
+              - client_id: grafana
+                client_name: Grafana
+                client_secret: '$pbkdf2-sha512$310000$E45bEthWr8A3/IMLAmhImQ$VTpPaY0LsollUDpJiPoE4Z.UU55mleW4O9WdJz65Bq5D9XFr1g4MmavTsC2e64vfkUVZDuWctrAxil0py8MSKQ'
+                authorization_policy: one_factor
+                consent_mode: implicit
+                require_pkce: true
+                pkce_challenge_method: S256
+                redirect_uris:
+                  - "https://grafana.{{ .Values.cluster.domain }}/login/generic_oauth"
+                scopes:
+                  - openid
+                  - profile
+                  - email
+                  - groups
+                response_types:
+                  - code
+                grant_types:
+                  - authorization_code
+                token_endpoint_auth_method: client_secret_basic
+              - client_id: argocd
+                client_name: Argo CD
+                client_secret: '$pbkdf2-sha512$310000$886qAF.DrXVG99BjziyF7Q$oiHilKQKjDPBLpUBXxCo2RGWQBBIoDvHm3rjYs8wD1T13rVTNQu1u07UX.19El6q.xWix4luMTlUdtQ9o1KlxA'
+                authorization_policy: one_factor
+                consent_mode: implicit
+                redirect_uris:
+                  - "https://argocd.{{ .Values.cluster.domain }}/auth/callback"
+                scopes:
+                  - openid
+                  - profile
+                  - email
+                  - groups
+                response_types:
+                  - code
+                grant_types:
+                  - authorization_code
+                token_endpoint_auth_method: client_secret_basic
+              - client_id: argocd-cli
+                client_name: Argo CD CLI
+                public: true
+                authorization_policy: one_factor
+                consent_mode: implicit
+                require_pkce: true
+                pkce_challenge_method: S256
+                redirect_uris:
+                  - http://localhost:8085/auth/callback
+                scopes:
+                  - openid
+                  - offline_access
+                  - email
+                  - groups
+                grant_types:
+                  - authorization_code
+                  - refresh_token
+                token_endpoint_auth_method: none
+
+# Cluster-specific overrides. Deep-merged on top of componentDefaults; keys match
+# components.helm[].name. Use this for values that genuinely vary per cluster and
+# can't be derived from cluster.domain (credentials, external fileserver hostnames, etc.).
 componentValues: {}
 
 # Per-component Argo CD ignoreDifferences entries. Keys must match the component name.

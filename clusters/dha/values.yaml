@@ -2,25 +2,10 @@ cluster:
   name: dha
   domain: dha.dhconsulting.ch
 
-# Per-component Helm value overrides. Keys match components.helm[].name in chart/platform/values.yaml.
-# The AppSet template lifts each entry into the matching Application's valuesObject.
+# Per-cluster overrides that can't be derived from cluster.domain. Deep-merged on top
+# of chart/platform/values.yaml componentDefaults — overrides win. Keys match
+# components.helm[].name.
 componentValues:
-  prometheus-operator:
-    kube-prometheus-stack:
-      grafana:
-        grafana.ini:
-          server:
-            root_url: "https://grafana.dha.dhconsulting.ch"
-          auth.generic_oauth:
-            auth_url: "https://auth.dha.dhconsulting.ch/api/oidc/authorization"
-            token_url: "https://auth.dha.dhconsulting.ch/api/oidc/token"
-            api_url: "https://auth.dha.dhconsulting.ch/api/oidc/userinfo"
-
-  console:
-    openshift-console:
-      console:
-        baseUrl: "https://console.dha.dhconsulting.ch"
-
   restic-rest-server:
     smb:
       source: "//CHANGEME.dha.dhconsulting.ch/backup"
