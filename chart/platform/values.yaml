@@ -34,7 +34,7 @@ components:
   kustomize:
     - { name: external-snapshotter, path: base/storage/external-snapshotter,      namespace: kube-system,      wave: 0 }
     - { name: multus-cni,           path: base/virtualization/multus-cni,         namespace: kube-system,      wave: 5 }
-    - { name: kubernetes-nmstate,   path: base/virtualization/kubernetes-nmstate, namespace: nmstate,          wave: 5, privileged: true }
+    # - { name: kubernetes-nmstate,   path: base/virtualization/kubernetes-nmstate, namespace: nmstate,          wave: 5, privileged: true }
     - { name: kubevirt,             path: base/virtualization/kubevirt,           namespace: kubevirt,         wave: 5, privileged: true }
     - { name: cdi,                  path: base/virtualization/cdi,                namespace: cdi,              wave: 5, privileged: true, hostPrefix: cdi-uploadproxy }
     - { name: kubevirt-manager,     path: base/virtualization/kubevirt-manager,   namespace: kubevirt-manager, wave: 6, hostPrefix: kubevirt-manager }
