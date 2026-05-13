@@ -15,7 +15,7 @@ components:
     # so Talos's baseline-default cluster admits hostPath / privileged / hostPID workloads.
     - { name: cert-manager,        path: base/security/cert-manager,          namespace: cert-manager,    wave: 1 }
     - { name: topolvm,             path: base/storage/topolvm,                namespace: topolvm-system,  wave: 1, privileged: true }
-    - { name: csi-driver-smb,      path: base/storage/csi-driver-smb,         namespace: kube-system,     wave: 1 }
+    # - { name: csi-driver-smb,      path: base/storage/csi-driver-smb,         namespace: kube-system,     wave: 1 }
     - { name: traefik,             path: base/ingress/traefik,                namespace: traefik,         wave: 2 }
     - { name: tls,                 path: base/security/tls,                   namespace: cert-manager,    wave: 3 }
     - { name: metrics-server,      path: base/monitoring/metrics-server,      namespace: kube-system,     wave: 4 }
