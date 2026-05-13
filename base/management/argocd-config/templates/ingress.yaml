@@ -7,6 +7,8 @@ metadata:
     argocd.argoproj.io/sync-options: Prune=false
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
     traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/service.serversscheme: https
+    traefik.ingress.kubernetes.io/service.serverstransport: argocd-argocd-server-https@kubernetescrd
 spec:
   ingressClassName: traefik
   rules:
@@ -19,4 +21,4 @@ spec:
               service:
                 name: argocd-server
                 port:
-                  number: 80
+                  number: 443
