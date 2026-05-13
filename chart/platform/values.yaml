@@ -24,7 +24,7 @@ components:
     - { name: vector,              path: base/logging/vector,                 namespace: logging,         wave: 4, privileged: true }
     - { name: authelia,            path: base/security/authelia,              namespace: authelia,        wave: 4 }
     - { name: k8up,                path: base/storage/k8up,                   namespace: k8up,            wave: 5 }
-    - { name: restic-rest-server,  path: base/storage/restic-rest-server,     namespace: restic,          wave: 5 }
+    # - { name: restic-rest-server,  path: base/storage/restic-rest-server,     namespace: restic,          wave: 5 }
     - { name: console,             path: base/virtualization/console,         namespace: console,         wave: 6 }
     - { name: argocd-config,       path: base/management/argocd-config,       namespace: argocd,          wave: 7 }
     - { name: launcher,            path: base/apps/launcher,                  namespace: launcher,        wave: 8 }
