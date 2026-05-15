@@ -30,7 +30,7 @@ resources:
 images:
   - name: kubevmui
     newName: kubevmui
-    newTag: latest
+    newTag: 0.1.0
 
 components:
   - ../../../components/ingress-host
