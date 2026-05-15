@@ -29,8 +29,7 @@ resources:
   - kubernetes/catalog/ubuntu-2404.yaml
 
 images:
-  - name: kubevmui
-    newName: kubevmui
+  - name: damienh/kubevmui
     newTag: 0.1.0
 
 components:

@@ -20,8 +20,3 @@ resources:
   - 04-service.yaml
   # Uncomment after editing the host:
   # - 05-ingress.yaml
-
-images:
-  - name: kubevmui
-    newName: damienh/kubevmui
-    newTag: 0.1.0
