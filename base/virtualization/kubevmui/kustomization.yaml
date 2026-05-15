@@ -16,6 +16,7 @@ resources:
   - kubernetes/deploy/03-deployment.yaml
   - kubernetes/deploy/04-service.yaml
   - kubernetes/deploy/05-ingress.yaml
+  - oidc-sealedsecret.yaml
   - kubernetes/catalog/almalinux-9.yaml
   - kubernetes/catalog/alpine-320.yaml
   - kubernetes/catalog/centos-stream-9.yaml

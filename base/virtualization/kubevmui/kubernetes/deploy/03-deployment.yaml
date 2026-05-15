@@ -53,6 +53,10 @@ spec:
             # debugging.
             - name: KUBEVMUI_KEEP_STAGING_FILES
               value: "false"
+          envFrom:
+            # OIDC + JWT settings sealed via sealed-secrets (oidc-sealedsecret.yaml).
+            - secretRef:
+                name: kubevmui-oidc
           volumeMounts:
             - name: import-staging
               mountPath: /tmp/kubevmui-import
