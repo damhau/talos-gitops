@@ -1,0 +1,58 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - kubernetes/crds/images.kubevmui.io.yaml
+  - kubernetes/crds/templates.kubevmui.io.yaml
+  - kubernetes/crds/migrationplans.kubevmui.io.yaml
+  - kubernetes/crds/networks.kubevmui.io.yaml
+  - kubernetes/crds/securitygroups.kubevmui.io.yaml
+  - kubernetes/crds/firewallpolicies.kubevmui.io.yaml
+  - kubernetes/crds/catalogentries.kubevmui.io.yaml
+  - kubernetes/rbac/cdi-clone-rbac.yaml
+  - kubernetes/deploy/00-namespace.yaml
+  - kubernetes/deploy/01-serviceaccount.yaml
+  - kubernetes/deploy/02-rbac.yaml
+  - kubernetes/deploy/03-deployment.yaml
+  - kubernetes/deploy/04-service.yaml
+  - kubernetes/deploy/05-ingress.yaml
+  - kubernetes/catalog/almalinux-9.yaml
+  - kubernetes/catalog/alpine-320.yaml
+  - kubernetes/catalog/centos-stream-9.yaml
+  - kubernetes/catalog/debian-11.yaml
+  - kubernetes/catalog/debian-12.yaml
+  - kubernetes/catalog/fedora-41.yaml
+  - kubernetes/catalog/rocky-9.yaml
+  - kubernetes/catalog/rocky-10.yaml
+  - kubernetes/catalog/ubuntu-2204.yaml
+  - kubernetes/catalog/ubuntu-2404.yaml
+
+images:
+  - name: kubevmui
+    newName: kubevmui
+    newTag: latest
+
+components:
+  - ../../../components/ingress-host
+
+# Argo CD sync ordering:
+#  -1 : CRDs (Argo treats a CRD as Healthy once Established=True)
+#   0 : namespace, RBAC, deployment, service, ingress (default)
+#   1 : custom resources that depend on the CRDs above
+patches:
+  - target:
+      group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+    patch: |-
+      - op: add
+        path: /metadata/annotations
+        value:
+          argocd.argoproj.io/sync-wave: "-1"
+  - target:
+      group: kubevmui.io
+      kind: CatalogEntry
+    patch: |-
+      - op: add
+        path: /metadata/annotations
+        value:
+          argocd.argoproj.io/sync-wave: "1"

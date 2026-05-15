@@ -26,18 +26,19 @@ components:
     - { name: k8up,                path: base/storage/k8up,                   namespace: k8up,            wave: 5 }
     # - { name: restic-rest-server,  path: base/storage/restic-rest-server,     namespace: restic,          wave: 5 }
     - { name: console,             path: base/virtualization/console,         namespace: console,         wave: 6 }
-    - { name: argocd-config,       path: base/management/argocd-config,       namespace: argocd,          wave: 7 }
     - { name: launcher,            path: base/apps/launcher,                  namespace: launcher,        wave: 8 }
 
   # hostPrefix is the subdomain prefix the ingress-host Component rewrites to.
   # Omit when the component has no Ingress/IngressRoute/CDI — skips the kustomize patch block.
   kustomize:
+    - { name: argocd,               path: base/management/argocd,                 namespace: argocd,           wave: 0, hostPrefix: argocd }
     - { name: external-snapshotter, path: base/storage/external-snapshotter,      namespace: kube-system,      wave: 0 }
     - { name: multus-cni,           path: base/virtualization/multus-cni,         namespace: kube-system,      wave: 5 }
     # - { name: kubernetes-nmstate,   path: base/virtualization/kubernetes-nmstate, namespace: nmstate,          wave: 5, privileged: true }
     - { name: kubevirt,             path: base/virtualization/kubevirt,           namespace: kubevirt,         wave: 5, privileged: true }
     - { name: cdi,                  path: base/virtualization/cdi,                namespace: cdi,              wave: 5, privileged: true, hostPrefix: cdi-uploadproxy }
     - { name: kubevirt-manager,     path: base/virtualization/kubevirt-manager,   namespace: kubevirt-manager, wave: 6, hostPrefix: kubevirt-manager }
+    - { name: kubevmui,             path: base/virtualization/kubevmui,           namespace: kubevmui,         wave: 6, privileged: true, hostPrefix: kubevmui }
     - { name: podinfo,              path: base/apps/podinfo,                      namespace: podinfo,          wave: 7, hostPrefix: podinfo }
 
 # Per-component Helm valuesObject DEFAULTS. Templated with `tpl` against this chart's

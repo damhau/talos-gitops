@@ -1,0 +1,111 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubevmui
+  namespace: kubevmui
+  labels:
+    app.kubernetes.io/name: kubevmui
+    app.kubernetes.io/component: backend
+spec:
+  # Single replica: import staging uses the pod's local filesystem
+  # (qemu-img convert + virt-v2v-in-place) and is not shared across pods.
+  # When the Helm chart (#40) lands, the import path will move to per-job
+  # PVCs (#48) and this can scale horizontally.
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kubevmui
+      app.kubernetes.io/component: backend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: kubevmui
+        app.kubernetes.io/component: backend
+    spec:
+      serviceAccountName: kubevmui
+      securityContext:
+        # libguestfs (used by virt-v2v-in-place during VM import) needs to
+        # exec a supermin appliance. It works as root inside the container;
+        # if you set runAsNonRoot here, imports break with "supermin: cannot
+        # find /boot/vmlinuz". Keep root unless imports are disabled.
+        runAsUser: 0
+        runAsGroup: 0
+      containers:
+        - name: kubevmui
+          image: damienh/kubevmui:0.0.4
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          env:
+            - name: KUBEVMUI_DEBUG
+              value: "false"
+            # Do NOT set KUBEVMUI_KUBECONFIG_PATH here — leaving it unset is
+            # what triggers the in-cluster config fallback. Setting it to ""
+            # used to disable both branches and break authentication.
+            - name: KUBEVMUI_FRONTEND_STATIC_DIR
+              value: /app/frontend-dist
+            # Keep import staging on the emptyDir below to survive pod restarts
+            # only via its volume; flip to "true" to retain converted disks for
+            # debugging.
+            - name: KUBEVMUI_KEEP_STAGING_FILES
+              value: "false"
+          volumeMounts:
+            - name: import-staging
+              mountPath: /tmp/kubevmui-import
+            # libguestfs writes to /tmp; give it room.
+            - name: libguestfs-tmp
+              mountPath: /tmp
+            # KVM acceleration for the libguestfs supermin appliance.
+            # Without this, virt-v2v-in-place falls back to TCG (10-20× slower).
+            - name: kvm
+              mountPath: /dev/kvm
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 4Gi
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+          # libguestfs needs to exec supermin (loop-mount, kpartx, etc.).
+          # SYS_ADMIN is the minimum capability set that lets the appliance
+          # boot inside the container. If you don't need VM imports, remove
+          # this whole securityContext block.
+          securityContext:
+            privileged: false
+            allowPrivilegeEscalation: true
+            capabilities:
+              add: ["SYS_ADMIN"]
+      volumes:
+        - name: import-staging
+          emptyDir:
+            sizeLimit: 50Gi
+        - name: libguestfs-tmp
+          emptyDir:
+            sizeLimit: 20Gi
+        # Host /dev/kvm passthrough. Requires nodes with KVM enabled
+        # (bare metal or nested-virt VMs); on managed clouds without nested
+        # virt this volume will fail to mount and the pod will CrashLoop.
+        # Switch to `devices.kubevirt.io/kvm: 1` as a resource request if
+        # you'd rather go through KubeVirt's device plugin.
+        - name: kvm
+          hostPath:
+            path: /dev/kvm
+            type: CharDevice

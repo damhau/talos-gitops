@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kubevmui
+  namespace: kubevmui
+  labels:
+    app.kubernetes.io/name: kubevmui
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/router.middlewares: authelia-authelia-forward-auth@kubernetescrd
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: kubevmui.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: kubevmui
+                port:
+                  name: http

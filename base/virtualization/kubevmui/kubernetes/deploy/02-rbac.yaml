@@ -1,0 +1,121 @@
+# Backend authenticates incoming user tokens via the TokenReview API,
+# so it needs the system:auth-delegator role.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kubevmui-auth-delegator
+  labels:
+    app.kubernetes.io/name: kubevmui
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:auth-delegator
+subjects:
+  - kind: ServiceAccount
+    name: kubevmui
+    namespace: kubevmui
+---
+# Resources the backend manages directly (KubeVirt VMs, CDI DataVolumes,
+# kubevmui CRDs, plus core PVC/Secret/Namespace plumbing).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kubevmui
+  labels:
+    app.kubernetes.io/name: kubevmui
+rules:
+  - apiGroups: [""]
+    resources:
+      - namespaces
+      - persistentvolumeclaims
+      - persistentvolumes
+      - secrets
+      - configmaps
+      - events
+      - serviceaccounts
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "pods/exec"]
+    verbs: ["get", "list", "watch"]
+  # Service discovery + the API server's service proxy. The metrics service
+  # talks to Prometheus via /api/v1/namespaces/.../services/.../proxy/, which
+  # requires the services/proxy verb — without it, /metrics and /timeline
+  # return 401 and the frontend logs the user out.
+  - apiGroups: [""]
+    resources: ["services"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["services/proxy"]
+    verbs: ["get", "create"]
+  - apiGroups: [""]
+    resources: ["nodes", "nodes/proxy", "nodes/metrics"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["kubevirt.io"]
+    resources:
+      - virtualmachines
+      - virtualmachineinstances
+      - virtualmachineinstancemigrations
+      - virtualmachineinstancepresets
+      - virtualmachineinstancereplicasets
+      - virtualmachinepools
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["subresources.kubevirt.io"]
+    resources:
+      - virtualmachineinstances/console
+      - virtualmachineinstances/vnc
+      - virtualmachineinstances/portforward
+      - virtualmachines/start
+      - virtualmachines/stop
+      - virtualmachines/restart
+      - virtualmachines/migrate
+    verbs: ["get", "create", "update"]
+  - apiGroups: ["snapshot.kubevirt.io"]
+    resources:
+      - virtualmachinesnapshots
+      - virtualmachinesnapshotcontents
+      - virtualmachinerestores
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["cdi.kubevirt.io"]
+    resources:
+      - datavolumes
+      - datavolumes/source
+      - cdiconfigs
+      - uploadtokenrequests
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["storageclasses", "volumesnapshotclasses"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["snapshot.storage.k8s.io"]
+    resources: ["volumesnapshots", "volumesnapshotcontents"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["kubevmui.io"]
+    resources:
+      - images
+      - templates
+      - migrationplans
+      - networks
+      - securitygroups
+      - firewallpolicies
+      - catalogentries
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["k8s.cni.cncf.io"]
+    resources: ["network-attachment-definitions"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: ["roles", "rolebindings", "clusterroles", "clusterrolebindings"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kubevmui
+  labels:
+    app.kubernetes.io/name: kubevmui
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kubevmui
+subjects:
+  - kind: ServiceAccount
+    name: kubevmui
+    namespace: kubevmui

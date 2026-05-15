@@ -1,0 +1,25 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: argocd
+
+# Pinned to v3.4.2 (the version currently running on the cluster).
+# Bump this tag to upgrade. Do not switch to `stable` — it's a moving
+# ref and will silently upgrade ArgoCD between syncs.
+resources:
+  - https://raw.githubusercontent.com/argoproj/argo-cd/v3.4.2/manifests/install.yaml
+  - ingress.yaml
+  - serverstransport.yaml
+
+# Upstream install.yaml already ships argocd-cm with the default keys
+# (resource.exclusions, ignoreResourceUpdates.*). Merge our Ingress
+# health customization in via strategic patch instead of declaring a
+# second ConfigMap that would clash.
+patches:
+  - path: argocd-cm.yaml
+    target:
+      kind: ConfigMap
+      name: argocd-cm
+
+components:
+  - ../../../components/ingress-host
