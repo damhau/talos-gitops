@@ -59,17 +59,17 @@ spec:
             # libguestfs writes to /tmp; give it room.
             - name: libguestfs-tmp
               mountPath: /tmp
-            # KVM acceleration for the libguestfs supermin appliance.
-            # Without this, virt-v2v-in-place falls back to TCG (10-20× slower).
-            - name: kvm
-              mountPath: /dev/kvm
           resources:
             requests:
               cpu: 200m
               memory: 512Mi
+              # KubeVirt device plugin: schedules onto nodes with KVM and
+              # mounts /dev/kvm into the container automatically.
+              devices.kubevirt.io/kvm: "1"
             limits:
               cpu: "2"
               memory: 4Gi
+              devices.kubevirt.io/kvm: "1"
           readinessProbe:
             httpGet:
               path: /api/v1/health
@@ -100,12 +100,3 @@ spec:
         - name: libguestfs-tmp
           emptyDir:
             sizeLimit: 20Gi
-        # Host /dev/kvm passthrough. Requires nodes with KVM enabled
-        # (bare metal or nested-virt VMs); on managed clouds without nested
-        # virt this volume will fail to mount and the pod will CrashLoop.
-        # Switch to `devices.kubevirt.io/kvm: 1` as a resource request if
-        # you'd rather go through KubeVirt's device plugin.
-        - name: kvm
-          hostPath:
-            path: /dev/kvm
-            type: CharDevice
