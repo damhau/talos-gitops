@@ -53,6 +53,9 @@ spec:
             # debugging.
             - name: KUBEVMUI_KEEP_STAGING_FILES
               value: "false"
+          envFrom:
+            - secretRef:
+                name: kubevmui-oidc
           volumeMounts:
             - name: import-staging
               mountPath: /tmp/kubevmui-import
