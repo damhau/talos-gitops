@@ -1,8 +1,16 @@
-# Component just ships the placeholder cluster-domain ConfigMap.
-# The Argo CD Application's kustomize section (rendered by chart/platform/templates/appset.yaml)
-# patches the CM with per-cluster values AND runs the replacements that apply those
-# values to Ingress/IngressRoute/CDI resources — both in the same kustomization so
-# patches process before replacements (which is the order kustomize enforces).
+# Component ships the placeholder cluster-domain ConfigMap that each consuming
+# base patches (via the appset's kustomize.patches block) with cluster-specific
+# host values.
+#
+# The kustomize replacements that copy those values onto Ingress/IngressRoute/
+# CDI host fields live in each consuming base's kustomization.yaml (NOT here):
+# component-level replacements run before the parent's patches, so the
+# ConfigMap is still the placeholder when replacements fire. Putting them in
+# the parent kustomization is the only spot where they run after patches.
+#
+# We can't put replacements in the appset templatePatch either: ArgoCD's
+# Application CRD schema doesn't include spec.source.kustomize.replacements
+# (verified on v3.4.2), and the API server silently strips the field.
 apiVersion: kustomize.config.k8s.io/v1alpha1
 kind: Component
 resources:

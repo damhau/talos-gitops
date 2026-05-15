@@ -11,3 +11,17 @@ resources:
 
 components:
   - ../../../components/ingress-host
+
+# Copy the cluster-specific host (patched onto cluster-domain CM by the appset)
+# onto the Ingress. Lives here, not in the component — component-level
+# replacements run before parent patches and would see PLACEHOLDER.
+replacements:
+  - source:
+      kind: ConfigMap
+      name: cluster-domain
+      fieldPath: data.host
+    targets:
+      - select:
+          kind: Ingress
+        fieldPaths:
+          - spec.rules.*.host

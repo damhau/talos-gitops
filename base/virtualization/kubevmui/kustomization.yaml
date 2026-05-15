@@ -34,3 +34,14 @@ images:
 
 components:
   - ../../../components/ingress-host
+
+replacements:
+  - source:
+      kind: ConfigMap
+      name: cluster-domain
+      fieldPath: data.host
+    targets:
+      - select:
+          kind: Ingress
+        fieldPaths:
+          - spec.rules.*.host

@@ -125,6 +125,11 @@ spec:
         targetRevision: {{ .Values.repo.revision }}
         path: "{{ `{{ .path }}` }}"
         kustomize:
+          # NOTE: kustomize.replacements (cluster-domain CM → Ingress/IngressRoute/CDI
+          # host fields) lives in components/ingress-host/kustomization.yaml.
+          # ArgoCD's Application CRD silently drops spec.source.kustomize.replacements
+          # (not in the schema), so keeping replacements inside the component lets
+          # repo-server evaluate them at kustomize-build time instead.
           patches:
             - target:
                 kind: ConfigMap
@@ -139,35 +144,6 @@ spec:
                 - op: replace
                   path: /data/uploadProxyUrl
                   value: "https://{{ `{{ .hostPrefix }}` }}.{{ .Values.cluster.domain }}"
-          replacements:
-            - source:
-                kind: ConfigMap
-                name: cluster-domain
-                fieldPath: data.host
-              targets:
-                - select:
-                    kind: Ingress
-                  fieldPaths:
-                    - spec.rules.*.host
-            - source:
-                kind: ConfigMap
-                name: cluster-domain
-                fieldPath: data.routeMatch
-              targets:
-                - select:
-                    kind: IngressRoute
-                  fieldPaths:
-                    - spec.routes.*.match
-            - source:
-                kind: ConfigMap
-                name: cluster-domain
-                fieldPath: data.uploadProxyUrl
-              targets:
-                - select:
-                    kind: CDI
-                    name: cdi
-                  fieldPaths:
-                    - spec.config.uploadProxyURLOverride
       {{ `{{- else }}` }}
       source:
         repoURL: {{ .Values.repo.url }}

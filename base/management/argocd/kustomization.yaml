@@ -23,3 +23,14 @@ patches:
 
 components:
   - ../../../components/ingress-host
+
+replacements:
+  - source:
+      kind: ConfigMap
+      name: cluster-domain
+      fieldPath: data.routeMatch
+    targets:
+      - select:
+          kind: IngressRoute
+        fieldPaths:
+          - spec.routes.*.match
