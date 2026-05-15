@@ -6,7 +6,7 @@ image:
 replicaCount: 1
 
 env:
-  APPS: "argocd,console,victorialogs,alertmanager,grafana,prometheus"
+  APPS: "argocd,kubevmui,victorialogs,alertmanager,grafana,prometheus"
 
 service:
   port: 80
