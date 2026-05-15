@@ -23,5 +23,5 @@ resources:
 
 images:
   - name: kubevmui
-    newName: kubevmui
+    newName: damienh/kubevmui
     newTag: 0.1.0
